@@ -9,19 +9,17 @@ window.addEventListener("keydown", (e) => {keys[e.key] = true})
 window.addEventListener("keyup", (e) => {keys[e.key] = false})
 
 window.addEventListener("mousemove", (e) => {
+    if (document.pointerLockElement !== canvas) {return}
     camRot.x -= e.movementY/500
     camRot.y -= e.movementX/500
 })
 
 canvas.addEventListener("mousedown", (e) => {
     canvas.requestPointerLock()
-})
+}) 
 
 const near = 0.1
-const focalLength = 20
-const filmApertureWidth = 0.980
-const filmApertureHeight = 0.735
-const inchToMm = 25.4
+const far = 500
 
 const lightDir = new vec3(0, 1, 0)
 
@@ -62,7 +60,7 @@ function gameLoop() {
 
     const image = ctx.createImageData(canvas.width, canvas.height);
     const pixels = image.data
-    var depthBuffer = new Array(canvas.width * canvas.height)
+    var depthBuffer = new Array(canvas.width * canvas.height).fill(far)
 
     for (var i = 0; i < scene.length; i++) {
         let worldTri = scene[i]
@@ -87,7 +85,7 @@ function gameLoop() {
             let rasterCoords = new vec3(
                 (NDCCoords.x + 1) / 2 * canvas.width,
                 (1 - NDCCoords.y) / 2 * canvas.height,
-                -cameraCoords.z 
+                1 / -cameraCoords.z 
             )
             
             rasterTri[n] = rasterCoords
@@ -113,9 +111,9 @@ function gameLoop() {
                     w0 /= area
                     w1 /= area
                     w2 /= area
-                    let z = rasterTri.a.z * w0 + rasterTri.b.z * w1 + rasterTri.c.z * w2
-                    
-                    if ((z < depthBuffer[y * canvas.width + x] || depthBuffer[y * canvas.width + x] === undefined) && z > near) {
+                    let z = 1 / (rasterTri.a.z * w0 + rasterTri.b.z * w1 + rasterTri.c.z * w2)
+
+                    if (z < depthBuffer[y * canvas.width + x]) {
                         depthBuffer[y * canvas.width + x] = z
                         let index = y * (canvas.width*4) + (x*4)
 

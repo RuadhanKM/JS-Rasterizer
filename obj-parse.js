@@ -1,14 +1,14 @@
 var scene = [
-    /*new tri(
+    new tri(
         new vec3(100, 0, 100),
         new vec3(100, 0, -100),
         new vec3(-100, 0, 100)
     ),
     new tri(
         new vec3(-100, 0, -100),
-        new vec3(100, 0, -100),
-        new vec3(-100, 0, 100)
-    ),*/
+        new vec3(-100, 0, 100),
+        new vec3(100, 0, -100)
+    ),
 ]
 
 fetch("test.obj").then(res => res.text()).then((obj) => {
