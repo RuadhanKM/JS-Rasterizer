@@ -119,10 +119,22 @@ class Rasterizer {
             let worldTri = this.scene[i]
             let rasterTri = new tri(new vec3(), new vec3(), new vec3())
 
+            let clip = 0
+
             for (var n = 0; n < 3; n++) {
                 let worldCoords = worldTri[n]
 
                 rasterTri[n] = this.vertexShader(worldCoords)
+
+                if (rasterTri[n].z < this.near) {clip++}
+            }
+
+            if (clip === 3) continue
+            if (clip === 2) {
+                
+            }
+            if (clip === 1) {
+
             }
 
             let bounds = rasterTri.getBoundingBox(this.canvas.width, this.canvas.height)
