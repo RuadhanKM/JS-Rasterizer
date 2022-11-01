@@ -41,4 +41,12 @@ class tri {
         
         return res
     }
+
+    clone() {
+        return new tri(
+            new vec3(this.a.x, this.a.y, this.a.z),
+            new vec3(this.b.x, this.b.y, this.b.z),
+            new vec3(this.c.x, this.c.y, this.c.z),
+        )
+    } 
 }

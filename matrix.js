@@ -77,6 +77,20 @@ class matrix {
         return m
     }
 
+    static perspective(verticalFov, aspect, near, far) {
+        let res = new matrix(4,4)
+        
+        let rad = verticalFov * Math.PI/180
+        let tanHalfFovy = Math.tan(rad / 2);
+
+        res.m[0][0] = 1 / (aspect * tanHalfFovy);
+        res.m[1][1] = 1 / (tanHalfFovy);
+        res.m[2][2] = - (far + near) / (far - near);
+        res.m[2][3] = - 1;
+        res.m[3][2] = - (2 * far * near) / (far - near);
+        return res;
+    }
+
     invert(){
         let i, j, k; 
         let s = new matrix(4,4,true); 
