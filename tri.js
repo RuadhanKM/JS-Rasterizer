@@ -46,7 +46,31 @@ class tri {
         return new tri(
             new vec3(this.a.x, this.a.y, this.a.z),
             new vec3(this.b.x, this.b.y, this.b.z),
-            new vec3(this.c.x, this.c.y, this.c.z),
+            new vec3(this.c.x, this.c.y, this.c.z)
         )
-    } 
+    }
+
+    scale(fac) {
+        return new tri(
+            this.a.muls(fac),
+            this.b.muls(fac),
+            this.c.muls(fac)
+        )
+    }
+
+    offset(vec) {
+        return new tri(
+            this.a.add(vec),
+            this.b.add(vec),
+            this.c.add(vec)
+        )
+    }
+
+    rotate(euler) {
+        return new tri(
+            this.a.rotate(euler),
+            this.b.rotate(euler),
+            this.c.rotate(euler)
+        )
+    }
 }

@@ -1,8 +1,7 @@
 class Rasterizer {
-    constructor (canvas, scene) {
+    constructor (canvas) {
         this.canvas = canvas
         this.ctx = canvas.getContext("2d")
-        this.scene = scene
         this.tick = 0
         this.rendering = false
         
@@ -28,13 +27,13 @@ class Rasterizer {
             return rasterCoords
         }
 
-        this.fragmentShader = (pixel, rasterTri, worldTri) => {
+        this.fragmentShader = (pixel, worldTri) => {
             let diffuse = worldTri.normal().dot(new vec3(0, 1, 0))
 
             return new vec3(
-                255*diffuse,
-                0,
-                0
+                worldTri.color.x*diffuse,
+                worldTri.color.y*diffuse,
+                worldTri.color.z*diffuse
             )
         }
 
@@ -169,49 +168,59 @@ class Rasterizer {
 
         this.gameLoop()
 
-        for (var i = 0; i < this.scene.length; i++) {
-            let clippedTris = this.clipTriToWorldNear(this.scene[i])
-            let worldTri = this.scene[i]
+        for (const object of this.scene.scene) {
+            for (const face of object.faces) {
+                let worldTri = face.clone()
 
-            for (const clipTri of clippedTris) {
-                let rasterTri = new tri(new vec3(), new vec3(), new vec3())
+                worldTri = worldTri.scale(object.scale)
+                worldTri = worldTri.rotate(object.rot)
+                worldTri = worldTri.offset(object.pos)
 
-                for (var n = 0; n < 3; n++) {
-                    let clipCoords = clipTri[n]
+                let clippedTris = this.clipTriToWorldNear(worldTri)
 
-                    rasterTri[n] = this.vertexShader(clipCoords)
-                }
+                worldTri.color = object.color
 
-                let bounds = rasterTri.getBoundingBox(this.canvas.width, this.canvas.height)
+                for (const clipTri of clippedTris) {
+                    let rasterTri = new tri(new vec3(), new vec3(), new vec3())
 
-                if (!bounds) {continue}
-        
-                let area = Rasterizer.edgeFunction(rasterTri.a, rasterTri.b, rasterTri.c)
-                
-                for (let y = bounds.y0; y <= bounds.y1; ++y) { 
-                    for (let x = bounds.x0; x <= bounds.x1; ++x) {
-                        let pixel = new vec3(x+0.5, y+0.5, 0)
-        
-                        let w0 = Rasterizer.edgeFunction(rasterTri.b, rasterTri.c, pixel)
-                        let w1 = Rasterizer.edgeFunction(rasterTri.c, rasterTri.a, pixel)
-                        let w2 = Rasterizer.edgeFunction(rasterTri.a, rasterTri.b, pixel)
-                        
-                        if (!((w0 > 0 || w1 > 0 || w2 > 0) && ((w0 < 0 || w1 < 0 || w2 < 0)))) {
-                            w0 /= area
-                            w1 /= area
-                            w2 /= area
-                            let z = 1 / (rasterTri.a.z * w0 + rasterTri.b.z * w1 + rasterTri.c.z * w2)
-        
-                            if (z < this.depthBuffer[y * canvas.width + x]) {
-                                this.depthBuffer[y * this.canvas.width + x] = z
-                                let index = y * (this.canvas.width*4) + (x*4)
-                                
-                                let color = this.fragmentShader(pixel, rasterTri, worldTri)
+                    for (var n = 0; n < 3; n++) {
+                        let clipCoords = clipTri[n]
 
-                                this.pixels[index+0] = color.x
-                                this.pixels[index+1] = color.y
-                                this.pixels[index+2] = color.z
-                                this.pixels[index+3] = 255
+                        rasterTri[n] = this.vertexShader(clipCoords)
+                    }
+
+                    let bounds = rasterTri.getBoundingBox(this.canvas.width, this.canvas.height)
+
+                    if (!bounds) {continue}
+            
+                    let area = Rasterizer.edgeFunction(rasterTri.a, rasterTri.b, rasterTri.c)
+                    
+                    for (let y = bounds.y0; y <= bounds.y1; ++y) { 
+                        for (let x = bounds.x0; x <= bounds.x1; ++x) {
+                            let pixel = new vec3(x+0.5, y+0.5, 0)
+            
+                            let w0 = Rasterizer.edgeFunction(rasterTri.b, rasterTri.c, pixel)
+                            let w1 = Rasterizer.edgeFunction(rasterTri.c, rasterTri.a, pixel)
+                            let w2 = Rasterizer.edgeFunction(rasterTri.a, rasterTri.b, pixel)
+                            
+                            if (!((w0 > 0 || w1 > 0 || w2 > 0) && ((w0 < 0 || w1 < 0 || w2 < 0)))) {
+                                w0 /= area
+                                w1 /= area
+                                w2 /= area
+                                let z = 1 / (rasterTri.a.z * w0 + rasterTri.b.z * w1 + rasterTri.c.z * w2)
+            
+                                if (z < this.depthBuffer[y * canvas.width + x]) {
+                                    this.depthBuffer[y * this.canvas.width + x] = z
+                                    let index = y * (this.canvas.width*4) + (x*4)
+                                    
+                                    pixel.z = z
+                                    let color = this.fragmentShader(pixel, worldTri)
+
+                                    this.pixels[index+0] = color.x
+                                    this.pixels[index+1] = color.y
+                                    this.pixels[index+2] = color.z
+                                    this.pixels[index+3] = 255
+                                }
                             }
                         }
                     }
