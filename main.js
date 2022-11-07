@@ -9,7 +9,7 @@ getScene().then(e => {
     requestAnimationFrame(loop)
 })
 
-camPos = [0,2,-5]
+camPos = [0,2,5]
 camRot = [0,0,0]
 
 var keys = []

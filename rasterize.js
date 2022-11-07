@@ -94,7 +94,7 @@ function loop() {
 
         let objectFaceLen = object.faces.length
         for (let faceIndex=0; faceIndex<objectFaceLen; faceIndex++) {
-            let worldTri = object.faces[faceIndex]
+            let worldTri = TriOffset(TriRotate(TriScale(object.faces[faceIndex], object.scale), object.rot), object.pos)
 
             let clippedTris = clipTriToWorldNear(worldTri)
             if (!clippedTris) continue
@@ -122,6 +122,7 @@ function loop() {
                         (1 - clipCoords[1]) / 2 * canvas.height,
                         1 / -clipCoords[2] 
                     ]
+                    
                     rasterTri.push(clipCoords)
                 }
 

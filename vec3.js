@@ -27,7 +27,7 @@ function V3Mul(a, b) {return [a[0] * b[0], a[1] * b[1], a[2] * b[2]]}
 function V3Div(a, b) {return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]}
 
 function V3MulF(a, b) {return [a[0] * b, a[1] * b, a[2] * b]}
-function V3MulF(a, b) {return [a[0] / b, a[1] / b, a[2] / b]}
+function V3DivF(a, b) {return [a[0] / b, a[1] / b, a[2] / b]}
 
 
 function V3Mag(v) {return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])}
