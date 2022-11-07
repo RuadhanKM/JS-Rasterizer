@@ -1,183 +1,188 @@
-function New4x4() {
-    return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-}
-function NewIdentity4x4() {
-    return [
-        1,0,0,0,
-        0,1,0,0,
-        0,0,1,0,
-        0,0,0,1
-    ]
-} 
+const depth = 255
 
-function camToMatrix(rot, pos) {
-    let m = New4x4()
+class matrix {
+    constructor(width, height, identity=false) {
+        this.width = width
+        this.height = height
+        
+        this.m = new Array(height);
+        var copy = new Array(width);
+        
+        for (var i = 0; i < width; i++) {
+            copy[i] = 0;
+        }
+        for (var i=0; i < height; i++){
+            this.m[i] = copy.slice(0);
+            if (identity) {
+                this.m[i][i] = 1
+            }
+        }
+    }
 
-    let xAxis = V3Rotate([1,0,0], rot)
-    let yAxis = V3Rotate([0,1,0], rot)
-    let zAxis = V3Rotate([0,0,1], rot)
+    mul(b) {
+        let a = this
+        let c = new matrix(4, 4);
+        
+        for (var i = 0; i < 4; ++i) { 
+            for (var j = 0; j < 4; ++j) { 
+                c.m[i][j] = a.m[i][0] * b.m[0][j] + a.m[i][1] * b.m[1][j] + a.m[i][2] * b.m[2][j] + a.m[i][3] * b.m[3][j]; 
+            } 
+        } 
 
-    m[0] = xAxis[0]
-    m[1] = xAxis[1]
-    m[2] = xAxis[2]
+        return c;
+    }
 
-    m[4] = yAxis[0]
-    m[5] = yAxis[1]
-    m[6] = yAxis[2]
-
-    m[8] = zAxis[0]
-    m[9] = zAxis[1]
-    m[10] = zAxis[2]
-
-    m[12] = pos[0]
-    m[13] = pos[1]
-    m[14] = pos[2]
-    m[15] = 1
-
-    return m
-}
-
-function Mat4x4MulVec3(Mat4x4, Vec3) {
-    let a, b, c, w
+    mulVec(o) {
+        let a, b, c, w
  
-    a =    Vec3[0] * Mat4x4[0] + Vec3[1] * Mat4x4[4] + Vec3[2] * Mat4x4[8] + Mat4x4[12]; 
-    b =    Vec3[0] * Mat4x4[1] + Vec3[1] * Mat4x4[5] + Vec3[2] * Mat4x4[9] + Mat4x4[13]; 
-    c =    Vec3[0] * Mat4x4[2] + Vec3[1] * Mat4x4[6] + Vec3[2] * Mat4x4[10] + Mat4x4[14]; 
-    w = 1/(Vec3[0] * Mat4x4[3] + Vec3[1] * Mat4x4[7] + Vec3[2] * Mat4x4[11] + Mat4x4[15])
+        a = o[0] * this.m[0][0] + o[1] * this.m[1][0] + o[2] * this.m[2][0] + this.m[3][0]; 
+        b = o[0] * this.m[0][1] + o[1] * this.m[1][1] + o[2] * this.m[2][1] + this.m[3][1]; 
+        c = o[0] * this.m[0][2] + o[1] * this.m[1][2] + o[2] * this.m[2][2] + this.m[3][2]; 
+        w = o[0] * this.m[0][3] + o[1] * this.m[1][3] + o[2] * this.m[2][3] + this.m[3][3]; 
+ 
+        return new vec3(
+            a / w,
+            b / w,
+            c / w
+        )
+    }
 
-    return [
-        a * w,
-        b * w,
-        c * w
-    ]
-}
+    static camToMatrix(rot, pos) {
+        let m = new matrix(4, 4)
 
-function Mat4x4Inv(m) {
-    let inv = New4x4()
-    let invOut = New4x4()
-    let i, det;
+        let xAxis = new vec3(1,0,0).rotate(rot)
+        let yAxis = new vec3(0,1,0).rotate(rot)
+        let zAxis = new vec3(0,0,1).rotate(rot)
 
-    inv[0] = m[5]  * m[10] * m[15] - 
-             m[5]  * m[11] * m[14] - 
-             m[9]  * m[6]  * m[15] + 
-             m[9]  * m[7]  * m[14] +
-             m[13] * m[6]  * m[11] - 
-             m[13] * m[7]  * m[10];
+        m.m[0][0] = xAxis[0]
+        m.m[0][1] = xAxis[1]
+        m.m[0][2] = xAxis[2]
+        m.m[0][3] = 0
 
-    inv[4] = -m[4]  * m[10] * m[15] + 
-              m[4]  * m[11] * m[14] + 
-              m[8]  * m[6]  * m[15] - 
-              m[8]  * m[7]  * m[14] - 
-              m[12] * m[6]  * m[11] + 
-              m[12] * m[7]  * m[10];
+        m.m[1][0] = yAxis[0]
+        m.m[1][1] = yAxis[1]
+        m.m[1][2] = yAxis[2]
+        m.m[1][3] = 0
 
-    inv[8] = m[4]  * m[9] * m[15] - 
-             m[4]  * m[11] * m[13] - 
-             m[8]  * m[5] * m[15] + 
-             m[8]  * m[7] * m[13] + 
-             m[12] * m[5] * m[11] - 
-             m[12] * m[7] * m[9];
+        m.m[2][0] = zAxis[0]
+        m.m[2][1] = zAxis[1]
+        m.m[2][2] = zAxis[2]
+        m.m[2][3] = 0
 
-    inv[12] = -m[4]  * m[9] * m[14] + 
-               m[4]  * m[10] * m[13] +
-               m[8]  * m[5] * m[14] - 
-               m[8]  * m[6] * m[13] - 
-               m[12] * m[5] * m[10] + 
-               m[12] * m[6] * m[9];
+        m.m[3][0] = pos[0]
+        m.m[3][1] = pos[1]
+        m.m[3][2] = pos[2]
+        m.m[3][3] = 1
 
-    inv[1] = -m[1]  * m[10] * m[15] + 
-              m[1]  * m[11] * m[14] + 
-              m[9]  * m[2] * m[15] - 
-              m[9]  * m[3] * m[14] - 
-              m[13] * m[2] * m[11] + 
-              m[13] * m[3] * m[10];
+        return m
+    }
 
-    inv[5] = m[0]  * m[10] * m[15] - 
-             m[0]  * m[11] * m[14] - 
-             m[8]  * m[2] * m[15] + 
-             m[8]  * m[3] * m[14] + 
-             m[12] * m[2] * m[11] - 
-             m[12] * m[3] * m[10];
+    static perspective(verticalFov, aspect, near, far) {
+        let res = new matrix(4,4)
+        
+        let rad = verticalFov * Math.PI/180
+        let tanHalfFovy = Math.tan(rad / 2);
 
-    inv[9] = -m[0]  * m[9] * m[15] + 
-              m[0]  * m[11] * m[13] + 
-              m[8]  * m[1] * m[15] - 
-              m[8]  * m[3] * m[13] - 
-              m[12] * m[1] * m[11] + 
-              m[12] * m[3] * m[9];
+        res.m[0][0] = 1 / (aspect * tanHalfFovy);
+        res.m[1][1] = 1 / (tanHalfFovy);
+        res.m[2][2] = - (far + near) / (far - near);
+        res.m[2][3] = - 1;
+        res.m[3][2] = - (2 * far * near) / (far - near);
+        return res;
+    }
 
-    inv[13] = m[0]  * m[9] * m[14] - 
-              m[0]  * m[10] * m[13] - 
-              m[8]  * m[1] * m[14] + 
-              m[8]  * m[2] * m[13] + 
-              m[12] * m[1] * m[10] - 
-              m[12] * m[2] * m[9];
+    invert(){
+        let i, j, k; 
+        let s = new matrix(4,4,true); 
+        let t = this; 
+ 
+        // Forward elimination
+        for (i = 0; i < 3 ; i++) { 
+            let pivot = i; 
+ 
+            let pivotsize = t.m[i][i]; 
+ 
+            if (pivotsize < 0) 
+                pivotsize = -pivotsize; 
+ 
+                for (j = i + 1; j < 4; j++) { 
+                    let tmp = t.m[j][i]; 
+ 
+                    if (tmp < 0) 
+                        tmp = -tmp; 
+ 
+                        if (tmp > pivotsize) { 
+                            pivot = j; 
+                            pivotsize = tmp; 
+                        } 
+                } 
+ 
+            if (pivotsize == 0) { 
+                // Cannot invert singular matrix
+                return new matrix(4,4); 
+            } 
+ 
+            if (pivot != i) { 
+                for (j = 0; j < 4; j++) { 
+                    let tmp; 
+ 
+                    tmp = t.m[i][j]; 
+                    t.m[i][j] = t.m[pivot][j]; 
+                    t.m[pivot][j] = tmp; 
+ 
+                    tmp = s.m[i][j]; 
+                    s.m[i][j] = s.m[pivot][j]; 
+                    s.m[pivot][j] = tmp; 
+                } 
+            } 
+ 
+            for (j = i + 1; j < 4; j++) { 
+                let f = t.m[j][i] / t.m[i][i]; 
+ 
+                for (k = 0; k < 4; k++) { 
+                    t.m[j][k] -= f * t.m[i][k]; 
+                    s.m[j][k] -= f * s.m[i][k]; 
+                } 
+            } 
+        } 
+ 
+        // Backward substitution
+        for (i = 3; i >= 0; --i) { 
+            let f; 
+ 
+            if ((f = t.m[i][i]) == 0) { 
+                // Cannot invert singular matrix
+                return new matrix(4,4); 
+            } 
+ 
+            for (j = 0; j < 4; j++) { 
+                t.m[i][j] /= f; 
+                s.m[i][j] /= f; 
+            } 
+ 
+            for (j = 0; j < i; j++) { 
+                f = t.m[j][i]; 
+ 
+                for (k = 0; k < 4; k++) { 
+                    t.m[j][k] -= f * t.m[i][k]; 
+                    s.m[j][k] -= f * s.m[i][k]; 
+                } 
+            } 
+        }
 
-    inv[2] = m[1]  * m[6] * m[15] - 
-             m[1]  * m[7] * m[14] - 
-             m[5]  * m[2] * m[15] + 
-             m[5]  * m[3] * m[14] + 
-             m[13] * m[2] * m[7] - 
-             m[13] * m[3] * m[6];
+        return s; 
+    }
 
-    inv[6] = -m[0]  * m[6] * m[15] + 
-              m[0]  * m[7] * m[14] + 
-              m[4]  * m[2] * m[15] - 
-              m[4]  * m[3] * m[14] - 
-              m[12] * m[2] * m[7] + 
-              m[12] * m[3] * m[6];
+    log(mes="") {
+        let fin = mes+"\n" 
 
-    inv[10] = m[0]  * m[5] * m[15] - 
-              m[0]  * m[7] * m[13] - 
-              m[4]  * m[1] * m[15] + 
-              m[4]  * m[3] * m[13] + 
-              m[12] * m[1] * m[7] - 
-              m[12] * m[3] * m[5];
+        for (var i of this.m) {
+            for (var k of i) {
+                fin += k.toString() + " "
+            }
+            fin += "\n"
+        }
 
-    inv[14] = -m[0]  * m[5] * m[14] + 
-               m[0]  * m[6] * m[13] + 
-               m[4]  * m[1] * m[14] - 
-               m[4]  * m[2] * m[13] - 
-               m[12] * m[1] * m[6] + 
-               m[12] * m[2] * m[5];
-
-    inv[3] = -m[1] * m[6] * m[11] + 
-              m[1] * m[7] * m[10] + 
-              m[5] * m[2] * m[11] - 
-              m[5] * m[3] * m[10] - 
-              m[9] * m[2] * m[7] + 
-              m[9] * m[3] * m[6];
-
-    inv[7] = m[0] * m[6] * m[11] - 
-             m[0] * m[7] * m[10] - 
-             m[4] * m[2] * m[11] + 
-             m[4] * m[3] * m[10] + 
-             m[8] * m[2] * m[7] - 
-             m[8] * m[3] * m[6];
-
-    inv[11] = -m[0] * m[5] * m[11] + 
-               m[0] * m[7] * m[9] + 
-               m[4] * m[1] * m[11] - 
-               m[4] * m[3] * m[9] - 
-               m[8] * m[1] * m[7] + 
-               m[8] * m[3] * m[5];
-
-    inv[15] = m[0] * m[5] * m[10] - 
-              m[0] * m[6] * m[9] - 
-              m[4] * m[1] * m[10] + 
-              m[4] * m[2] * m[9] + 
-              m[8] * m[1] * m[6] - 
-              m[8] * m[2] * m[5];
-
-    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
-
-    if (det == 0)
-        return;
-
-    det = 1.0 / det;
-
-    for (i = 0; i < 16; i++)
-        invOut[i] = inv[i] * det;
-
-    return invOut;
+        console.log(fin)
+    }
 }

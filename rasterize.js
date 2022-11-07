@@ -1,171 +1,244 @@
-var t, b, l, r, worldToCamMatrix, scene, ctx, camRot, camPos, canvas
-const near = 0.1
-const far = 500
-const NDCHeight = 1.2
-
-function updateNDCSize() {
-    let ratio = canvas.width/canvas.height
-
-    t = NDCHeight*near
-    r = t*ratio*2
-    
-    t = 1/(t*2)
-    r = 1/r
-}
-
-function lineCamSpaceNearIntersect(p0, p1) {
-    let p_no = [0,0,-1]
-    let p_co = [0,0,-near]
-
-    let u = V3Sub(p1, p0)
-    let dot = V3Dot(p_no, u)
-
-    if (Math.abs(dot) > 1e-6) {
-        let w = V3Sub(p0, p_co)
-        let fac = -V3Dot(p_no, w) / dot
-        u = V3MulF(u, fac)
-        return V3Add(p0, u)
-    }
-
-    return false
-}
-
-function clipTriToWorldNear(rawTri) {
-    let clipped = []
-    let numClipped = 0
-    let cameraTri = []
-
-    for (let i=0; i<3; i++) {
-        let camVert = Mat4x4MulVec3(worldToCamMatrix, rawTri[i])
-
-        let c = -camVert[2] > near
-        cameraTri.push(camVert)
-        clipped.push(c)
-        numClipped += c
-    }
-    
-    if (numClipped === 3) return [cameraTri]
-    else if (numClipped === 2) {
-        return [
-            [
-                (clipped[0] ? cameraTri[0] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[1])),
-                (clipped[1] ? cameraTri[1] : lineCamSpaceNearIntersect(cameraTri[1], cameraTri[2])),
-                (clipped[2] ? cameraTri[2] : lineCamSpaceNearIntersect(cameraTri[2], cameraTri[0]))
-            ],
-            [
-                (clipped[0] ? cameraTri[0] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[2])),
-                (clipped[1] ? cameraTri[1] : lineCamSpaceNearIntersect(cameraTri[1], cameraTri[0])),
-                (clipped[2] ? cameraTri[2] : lineCamSpaceNearIntersect(cameraTri[2], cameraTri[1]))
-            ]
-        ]
-    }
-    else if (numClipped === 1) {
-        return [[
-            (clipped[0] ? cameraTri[0] : lineCamSpaceNearIntersect(cameraTri[1], cameraTri[2])),
-            (clipped[1] ? cameraTri[1] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[2])),
-            (clipped[2] ? cameraTri[2] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[1]))
-        ]]
-    }
-    else return false
-}
-
-function edgeFunction(a, b, c) 
-{ 
-    return (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])
-} 
-
-function loop() {
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-
-    updateNDCSize()
-
-    let image = ctx.createImageData(canvas.width, canvas.height)
-    let pixels = image.data
-    let depthBuffer = new Array(canvas.width * canvas.height).fill(far)
-
-    gameLoop()
-
-    worldToCamMatrix = Mat4x4Inv(camToMatrix(camRot, camPos))
-
-    let sceneLen = scene.scene.length
-    for (let objectIndex=0; objectIndex<sceneLen; objectIndex++) {
-        let object = scene.scene[objectIndex]
-
-        let objectFaceLen = object.faces.length
-        for (let faceIndex=0; faceIndex<objectFaceLen; faceIndex++) {
-            let worldTri = object.faces[faceIndex]
-
-            let clippedTris = clipTriToWorldNear(worldTri)
-            if (!clippedTris) continue
-
-            let clipTriLen = clippedTris.length
-            for (let clipTriIndex=0; clipTriIndex<clipTriLen; clipTriIndex++) {
-                let rasterTri = []
-                let clipTri = clippedTris[clipTriIndex]
-
-                for (var n = 0; n < 3; n++) {
-                    let clipCoords = clipTri[n]
-
-                    clipCoords = [ 
-                        near * clipCoords[0] / -clipCoords[2],
-                        near * clipCoords[1] / -clipCoords[2],
-                        clipCoords[2]
-                    ]
-                    clipCoords = [
-                        2 * clipCoords[0] * r,
-                        2 * clipCoords[1] * t,
-                        clipCoords[2]
-                    ]
-                    clipCoords = [
-                        (clipCoords[0] + 1) / 2 * canvas.width,
-                        (1 - clipCoords[1]) / 2 * canvas.height,
-                        1 / -clipCoords[2] 
-                    ]
-                    rasterTri.push(clipCoords)
-                }
-
-                let bounds = TriGetBoundingBox(rasterTri, canvas.width, canvas.height)
-
-                if (!bounds) {continue}
-
-                let area = 1/edgeFunction(rasterTri[0], rasterTri[1], rasterTri[2])
-
-                for (let y = bounds[2]; y <= bounds[3]; ++y) { 
-                    for (let x = bounds[0]; x <= bounds[1]; ++x) {
-                        let pixel = [x+0.5, y+0.5, 0]
+class Rasterizer {
+    constructor (canvas) {
+        this.canvas = canvas
+        this.ctx = canvas.getContext("2d")
+        this.tick = 0
+        this.rendering = false
         
-                        let w0 = edgeFunction(rasterTri[1], rasterTri[2], pixel)
-                        let w1 = edgeFunction(rasterTri[2], rasterTri[0], pixel)
-                        let w2 = edgeFunction(rasterTri[0], rasterTri[1], pixel)
-                        
-                        if (!((w0 > 0 || w1 > 0 || w2 > 0) && ((w0 < 0 || w1 < 0 || w2 < 0)))) {
-                            w0 *= area
-                            w1 *= area
-                            w2 *= area
-                            let z = 1 / (rasterTri[0][2] * w0 + rasterTri[1][2] * w1 + rasterTri[2][2] * w2)
+        this.NDCHeight = 1.2
+        this.near = 0.1
+        this.far = 500
+        this.ratio = canvas.width/canvas.height
 
-                            if (z < depthBuffer[y * canvas.width + x]) {
-                                depthBuffer[y * canvas.width + x] = z
-                                let index = y * (canvas.width*4) + (x*4)
-                                
-                                pixel.z = z
-                                let diffuse = V3Dot(TriNormal(worldTri), [0,1,0])
-                                let color = [0,255*diffuse,0]
+        this.updateNDCSize()
 
-                                pixels[index+0] = color[0]
-                                pixels[index+1] = color[1]
-                                pixels[index+2] = color[2]
-                                pixels[index+3] = 255
+        this.camRot = new vec3()
+        this.camPos = new vec3(0, 2, 5)
+
+        this.image = this.ctx.createImageData(canvas.width, canvas.height);
+        this.pixels = this.image.data
+        this.depthBuffer = new Array(canvas.width * canvas.height).fill(this.far)
+
+        this.vertexShader = (clipCoords) => {
+            let screenCoords = this.camToScreen(clipCoords)
+            let NDCCoords = this.screenToNDC(screenCoords)
+            let rasterCoords = this.NDCToRaster(NDCCoords)
+            
+            return rasterCoords
+        }
+
+        this.fragmentShader = (pixel, worldTri) => {
+            let diffuse = worldTri.normal().dot(new vec3(0, 1, 0))
+
+            return new vec3(
+                worldTri.color.x*diffuse,
+                worldTri.color.y*diffuse,
+                worldTri.color.z*diffuse
+            )
+        }
+
+        this.postProcessing = (imageData) => {}
+
+        this.gameLoop = () => {}
+    }
+
+    addGameLoop(gameLoop) {
+        this.gameLoop = gameLoop
+    }
+
+    addFragmentShader(fragmentShader) {
+        this.fragmentShader = fragmentShader
+    }
+
+    addVertexShader(vertexShader) {
+        this.vertexShader = vertexShader
+    }
+
+    addPostProcessing(postProcessing) {
+        this.postProcessing = postProcessing
+    }
+
+    worldToCam(worldCoords) {
+        return matrix.camToMatrix(this.camRot, this.camPos).invert().mulVec(worldCoords)
+    }
+
+    camToScreen(cameraCoords) {
+        return new vec3(
+            this.near * cameraCoords.x / -cameraCoords.z,
+            this.near * cameraCoords.y / -cameraCoords.z,
+            cameraCoords.z
+        )
+    }
+
+    screenToNDC(screenCoords) {
+        return new vec3(
+            2 * screenCoords.x / (this.r - this.l) - (this.r + this.l) / (this.r - this.l),
+            2 * screenCoords.y / (this.t - this.b) - (this.t + this.b) / (this.t - this.b),
+            screenCoords.z
+        )
+    }
+
+    NDCToRaster(NDCCoords) {
+        return new vec3(
+            (NDCCoords.x + 1) / 2 * canvas.width,
+            (1 - NDCCoords.y) / 2 * canvas.height,
+            1 / -NDCCoords.z 
+        )
+    }
+
+    updateNDCSize() {
+        this.ratio = this.canvas.width/this.canvas.height
+
+        this.t = this.NDCHeight*this.near
+        this.b = -this.t
+        this.r = this.t*this.ratio
+        this.l = -this.r
+    }
+
+    lineCamSpaceNearIntersect (p0, p1, epsilon=1e-6) {
+        let p_no = new vec3(0,0,-1)
+        let p_co = new vec3(0,0,-this.near)
+
+        let u = p1.sub(p0)
+        let dot = p_no.dot(u)
+
+        if (Math.abs(dot) > epsilon) {
+            let w = p0.sub(p_co)
+            let fac = -p_no.dot(w) / dot
+            u = u.muls(fac)
+            return p0.add(u)
+        }
+
+        return false
+    }
+
+    clipTriToWorldNear(rawTri) {
+        let clipped = []
+        let cameraTri = rawTri.clone()
+
+        for (let i=0; i<3; i++) {
+            cameraTri[i] = this.worldToCam(cameraTri[i])
+
+            clipped.push(-cameraTri[i].z > this.near)
+        }
+
+        let numClipped = clipped.filter(a => a).length
+
+        if (numClipped === 3) return [cameraTri]
+        if (numClipped === 2) {
+            return [
+                new tri(
+                    (clipped[0] ? cameraTri[0] : this.lineCamSpaceNearIntersect(cameraTri[0], cameraTri[1])),
+                    (clipped[1] ? cameraTri[1] : this.lineCamSpaceNearIntersect(cameraTri[1], cameraTri[2])),
+                    (clipped[2] ? cameraTri[2] : this.lineCamSpaceNearIntersect(cameraTri[2], cameraTri[0])),
+                ),
+                new tri(
+                    (clipped[0] ? cameraTri[0] : this.lineCamSpaceNearIntersect(cameraTri[0], cameraTri[2])),
+                    (clipped[1] ? cameraTri[1] : this.lineCamSpaceNearIntersect(cameraTri[1], cameraTri[0])),
+                    (clipped[2] ? cameraTri[2] : this.lineCamSpaceNearIntersect(cameraTri[2], cameraTri[1])),
+                )
+            ]
+        }
+        if (numClipped === 1) {
+            return [new tri(
+                (clipped[0] ? cameraTri[0] : this.lineCamSpaceNearIntersect(cameraTri[1], cameraTri[2])),
+                (clipped[1] ? cameraTri[1] : this.lineCamSpaceNearIntersect(cameraTri[0], cameraTri[2])),
+                (clipped[2] ? cameraTri[2] : this.lineCamSpaceNearIntersect(cameraTri[0], cameraTri[1])),
+            )]
+        }
+        if (numClipped === 0) return []
+    }
+
+    static edgeFunction(a, b, c) 
+    { 
+        return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x)
+    } 
+
+    loop() {
+        if (!this.rendering) { return }
+
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+
+        this.updateNDCSize()
+
+        this.image = this.ctx.createImageData(canvas.width, canvas.height)
+        this.pixels = this.image.data
+        this.depthBuffer = new Array(canvas.width * canvas.height).fill(this.far)
+
+        this.gameLoop()
+
+        for (const object of this.scene.scene) {
+            for (const face of object.faces) {
+                let worldTri = face.clone()
+
+                worldTri = worldTri.scale(object.scale)
+                worldTri = worldTri.rotate(object.rot)
+                worldTri = worldTri.offset(object.pos)
+
+                let clippedTris = this.clipTriToWorldNear(worldTri)
+
+                worldTri.color = object.color
+
+                for (const clipTri of clippedTris) {
+                    let rasterTri = new tri(new vec3(), new vec3(), new vec3())
+
+                    for (var n = 0; n < 3; n++) {
+                        let clipCoords = clipTri[n]
+
+                        rasterTri[n] = this.vertexShader(clipCoords)
+                    }
+
+                    let bounds = rasterTri.getBoundingBox(this.canvas.width, this.canvas.height)
+
+                    if (!bounds) {continue}
+            
+                    let area = Rasterizer.edgeFunction(rasterTri.a, rasterTri.b, rasterTri.c)
+                    
+                    for (let y = bounds.y0; y <= bounds.y1; ++y) { 
+                        for (let x = bounds.x0; x <= bounds.x1; ++x) {
+                            let pixel = new vec3(x+0.5, y+0.5, 0)
+            
+                            let w0 = Rasterizer.edgeFunction(rasterTri.b, rasterTri.c, pixel)
+                            let w1 = Rasterizer.edgeFunction(rasterTri.c, rasterTri.a, pixel)
+                            let w2 = Rasterizer.edgeFunction(rasterTri.a, rasterTri.b, pixel)
+                            
+                            if (!((w0 > 0 || w1 > 0 || w2 > 0) && ((w0 < 0 || w1 < 0 || w2 < 0)))) {
+                                w0 /= area
+                                w1 /= area
+                                w2 /= area
+                                let z = 1 / (rasterTri.a.z * w0 + rasterTri.b.z * w1 + rasterTri.c.z * w2)
+            
+                                if (z < this.depthBuffer[y * canvas.width + x]) {
+                                    this.depthBuffer[y * this.canvas.width + x] = z
+                                    let index = y * (this.canvas.width*4) + (x*4)
+                                    
+                                    pixel.z = z
+                                    let color = this.fragmentShader(pixel, worldTri)
+
+                                    this.pixels[index+0] = color.x
+                                    this.pixels[index+1] = color.y
+                                    this.pixels[index+2] = color.z
+                                    this.pixels[index+3] = 255
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+        this.postProcessing(this.image)
+
+        this.ctx.putImageData(this.image, 0, 0)
+
+        this.tick++
+        requestAnimationFrame(() => {this.loop()})
     }
 
-    ctx.putImageData(image, 0, 0)
-
-    requestAnimationFrame(loop)
+    start() {
+        this.rendering = true
+        
+        this.loop()
+    }
 }

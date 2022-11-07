@@ -100,7 +100,7 @@ class OBJFile {
     const y = lineItems.length >= 3 ? parseFloat(lineItems[2]) : 0.0;
     const z = lineItems.length >= 4 ? parseFloat(lineItems[3]) : 0.0;
 
-    this._currentModel().vertices.push([x, y, z]);
+    this._currentModel().vertices.push(new vec3(x, y, z));
   }
 
   _parseTextureCoords(lineItems) {
@@ -108,7 +108,7 @@ class OBJFile {
     const v = lineItems.length >= 3 ? parseFloat(lineItems[2]) : 0.0;
     const w = lineItems.length >= 4 ? parseFloat(lineItems[3]) : 0.0;
 
-    this._currentModel().textureCoords.push([u, v, w]);
+    this._currentModel().textureCoords.push(new vec3(u, v, w));
   }
 
   _parseVertexNormal(lineItems) {
@@ -116,14 +116,14 @@ class OBJFile {
     const y = lineItems.length >= 3 ? parseFloat(lineItems[2]) : 0.0;
     const z = lineItems.length >= 4 ? parseFloat(lineItems[3]) : 0.0;
 
-    this._currentModel().vertexNormals.push([x, y, z]);
+    this._currentModel().vertexNormals.push(new vec3(x, y, z));
   }
 
   _parsePolygon(lineItems) {
     const totalVertices = (lineItems.length - 1);
     if (totalVertices < 3) { throw (`Face statement has less than 3 vertices${this.filePath}${this.lineNumber}`); }
 
-    const face = []
+    const face = new tri(new vec3(), new vec3(), new vec3())
 
     for (let i = 0; i < totalVertices; i += 1) {
       const vertexString = lineItems[i + 1];
@@ -144,7 +144,7 @@ class OBJFile {
       // convert these to postive indices for simplicity
       if (vertexIndex < 0) { vertexIndex = this._currentModel().vertices.length + 1 + vertexIndex; }
 
-      face.push(this._currentModel().vertices[vertexIndex-1]);
+      face[i] = this._currentModel().vertices[vertexIndex-1];
     }
     this._currentModel().faces.push(face);
   }
