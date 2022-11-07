@@ -32,38 +32,38 @@ function lineCamSpaceNearIntersect(p0, p1) {
 
 function clipTriToWorldNear(rawTri) {
     let clipped = []
-    let numClipped = 0
+    let unclipped = []
     let cameraTri = []
 
     for (let i=0; i<3; i++) {
         let camVert = Mat4x4MulVec3(worldToCamMatrix, rawTri[i])
-
-        let c = -camVert[2] > near
         cameraTri.push(camVert)
-        clipped.push(c)
-        numClipped += c
+
+        if (-camVert[2] > near) clipped.push(camVert); else unclipped.push(camVert)
     }
+
+    let numClipped = clipped.length
     
     if (numClipped === 3) return [cameraTri]
     else if (numClipped === 2) {
         return [
             [
-                (clipped[0] ? cameraTri[0] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[1])),
-                (clipped[1] ? cameraTri[1] : lineCamSpaceNearIntersect(cameraTri[1], cameraTri[2])),
-                (clipped[2] ? cameraTri[2] : lineCamSpaceNearIntersect(cameraTri[2], cameraTri[0]))
+                clipped[1],
+                lineCamSpaceNearIntersect(clipped[0], unclipped[0]),
+                lineCamSpaceNearIntersect(clipped[1], unclipped[0]),
             ],
             [
-                (clipped[0] ? cameraTri[0] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[2])),
-                (clipped[1] ? cameraTri[1] : lineCamSpaceNearIntersect(cameraTri[1], cameraTri[0])),
-                (clipped[2] ? cameraTri[2] : lineCamSpaceNearIntersect(cameraTri[2], cameraTri[1]))
+                clipped[0],
+                clipped[1],
+                lineCamSpaceNearIntersect(clipped[0], unclipped[0]),
             ]
         ]
     }
     else if (numClipped === 1) {
         return [[
-            (clipped[0] ? cameraTri[0] : lineCamSpaceNearIntersect(cameraTri[1], cameraTri[2])),
-            (clipped[1] ? cameraTri[1] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[2])),
-            (clipped[2] ? cameraTri[2] : lineCamSpaceNearIntersect(cameraTri[0], cameraTri[1]))
+            clipped[0],
+            lineCamSpaceNearIntersect(clipped[0], unclipped[0]),
+            lineCamSpaceNearIntersect(clipped[0], unclipped[1]),
         ]]
     }
     else return false
