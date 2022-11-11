@@ -2,10 +2,12 @@ canvas = document.querySelector("#canvas")
 ctx = canvas.getContext("2d")
 var teapot
 var teapot2
+var plane
 
 getScene().then(e => {
     teapot = e.getObject("teapot")
     teapot2 = e.getObject("teapot2")
+    plane = e.getObject("plane")
 
     scene = e
     requestAnimationFrame(loop)
@@ -52,13 +54,10 @@ function gameLoop() {
 
     tick++
 
+    plane.rot = V3Add(plane.rot, [0.04,0.04,0])
+
     //teapot.rot = V3Add(teapot.rot, [0.1, 0.1, 0])
     //teapot2.rot = V3Add(teapot2.rot, [-0.1, -0.1, 0])
 }
 
-let crosshair = new Image()
-crosshair.src = "https://steamuserimages-a.akamaihd.net/ugc/1009312513243995585/3420F7DA31E44C3DC1A4347BDFF66E4F04416095/"
-
-function postProcessing() {
-    ctx.drawImage(crosshair, canvas.width/2-60, canvas.height/2-60, 120, 120)
-}
+function postProcessing() {}

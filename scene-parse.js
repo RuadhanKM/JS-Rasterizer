@@ -4,7 +4,7 @@ async function getScene() {
 
         scene.camPos = [obj.cam.pos.x, obj.cam.pos.y, obj.cam.pos.z]
         scene.camPos = [obj.cam.rot.x, obj.cam.rot.y, obj.cam.rot.z]
-        scene.lightDir = [obj.lighting.dir.x, obj.lighting.dir.y, obj.lighting.dir.z]
+        scene.lightDir = V3Norm([obj.lighting.dir.x, obj.lighting.dir.y, obj.lighting.dir.z])
         scene.scene = []
 
         let promises = []

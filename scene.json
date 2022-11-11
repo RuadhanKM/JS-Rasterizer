@@ -4,7 +4,7 @@
         "rot": {"x": 0, "y": 0, "z": 0}
     },
     "lighting" : {
-        "dir": {"x": 0, "y": 1, "z": 0}
+        "dir": {"x": 1, "y": 1, "z": 1}
     },
     "scene": [
         {
@@ -28,11 +28,12 @@
             "size": 1
         },
         {
+            "name": "plane",
             "type": "primative",
-            "primativeType": "plane",
+            "primativeType": "cube",
             "colorSource": "texture",
             "textureUrl": "./maxresdefault.jpg",
-            "size": 50,
+            "size": 3,
             "color": {"r": 200, "g": 150, "b": 100},
             "pos": {"x": 0, "y": -5, "z": 0},
             "rot": {"x": 0, "y": 0, "z": 0}
