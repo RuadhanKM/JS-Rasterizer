@@ -10,30 +10,43 @@ async function getScene() {
         let promises = []
 
         for (const element of obj.scene) {
+            let obj = {}
+            scene.scene.push(obj)
+
+            obj.rot = [element.rot.x, element.rot.y, element.rot.z]
+            obj.pos = [element.pos.x, element.pos.y, element.pos.z]
+            obj.scale = element.size
+            obj.name = element.name
+            obj.colorSource = element.colorSource
+
             if (element.type === "model") {
-                promises.push(fetch(element.modelUrl).then(res => res.text()).then((obj) => {
-                    let objFile = new OBJFile(obj).parse().models[0]
-
-                    objFile.rot = [element.rot.x, element.rot.y, element.rot.z]
-                    objFile.pos = [element.pos.x, element.pos.y, element.pos.z]
-                    objFile.scale = element.size
-                    objFile.color = [255, 0, 0]
-                    objFile.name = element.name
-
-                    scene.scene.push(objFile)
+                promises.push(fetch(element.modelUrl).then(res => res.text()).then((fileData) => {
+                    obj.faces = new OBJFile(fileData).parse().models[0].faces
                 }))
             }
             if (element.type === "primative") {
-                let objFile = {}
+                obj.faces = getPrimativeFaces(element.primativeType)
+            }
 
-                objFile.rot = [element.rot.x, element.rot.y, element.rot.z]
-                objFile.pos = [element.pos.x, element.pos.y, element.pos.z]
-                objFile.scale = element.size
-                objFile.color = [255, 0, 0]
-                objFile.name = element.name
-                objFile.faces = getPrimativeFaces(element.primativeType)
+            if (element.colorSource === "texture") {
+                let canv = document.createElement("canvas")
+                let ctx = canv.getContext("2d")
+                let image = new Image()
 
-                scene.scene.push(objFile)
+                promises.push(new Promise(resolve => {
+                    image.onload = () => {
+                        canv.width = image.width
+                        canv.height = image.height
+                        ctx.drawImage(image, 0, 0)
+                        obj.color = ctx.getImageData(0,0,canv.width,canv.height)
+
+                        resolve()
+                    }
+                    image.src = element.textureUrl
+                }))
+            }
+            if (element.colorSource === "solid" || !element.colorSource) {
+                obj.color = element.color ? [element.color.r, element.color.g, element.color.b] : [255,0,255]
             }
         }
 

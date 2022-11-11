@@ -144,7 +144,7 @@ class OBJFile {
       // convert these to postive indices for simplicity
       if (vertexIndex < 0) { vertexIndex = this._currentModel().vertices.length + 1 + vertexIndex; }
 
-      face.push(this._currentModel().vertices[vertexIndex-1]);
+      face.push(this._currentModel().vertices[vertexIndex-1].concat(this._currentModel().textureCoords[textureCoordsIndex-1]));
     }
     this._currentModel().faces.push(face);
   }

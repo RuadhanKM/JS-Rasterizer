@@ -10,19 +10,30 @@
         {
             "type": "model",
             "name": "teapot",
-            "modelUrl": "./test.obj",
+            "modelUrl": "https://raw.githubusercontent.com/OpenGLInsights/OpenGLInsightsCode/master/Chapter%2026%20Indexing%20Multiple%20Vertex%20Arrays/article/suzanne.obj",
             "colorSource": "texture",
-            "textureUrl": "https://i.ytimg.com/vi/gscO1sPOjSU/maxresdefault.jpg",
-            "pos": {"x": 0, "y": 0, "z": 0},
+            "textureUrl": "./maxresdefault.jpg",
+            "pos": {"x": -3, "y": 0, "z": 0},
+            "rot": {"x": 0, "y": 0, "z": 0},
+            "size": 1
+        },
+        {
+            "type": "model",
+            "name": "teapot2",
+            "modelUrl": "https://raw.githubusercontent.com/OpenGLInsights/OpenGLInsightsCode/master/Chapter%2026%20Indexing%20Multiple%20Vertex%20Arrays/article/suzanne.obj",
+            "colorSource": "solid",
+            "textureUrl": "./maxresdefault.jpg",
+            "pos": {"x": 3, "y": 0, "z": 0},
             "rot": {"x": 0, "y": 0, "z": 0},
             "size": 1
         },
         {
             "type": "primative",
             "primativeType": "plane",
-            "colorSource": "solid",
+            "colorSource": "texture",
+            "textureUrl": "./maxresdefault.jpg",
             "size": 50,
-            "color": {"r": 255, "g": 0, "b": 0},
+            "color": {"r": 200, "g": 150, "b": 100},
             "pos": {"x": 0, "y": -5, "z": 0},
             "rot": {"x": 0, "y": 0, "z": 0}
         }
