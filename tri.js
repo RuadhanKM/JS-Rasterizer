@@ -1,76 +1,47 @@
-class tri {
-    constructor(a,b,c) {
-        this.a = a
-        this.b = b
-        this.c = c
-    }
+function TriNormal(t) {
+    return V3Norm(V3Cross(V3Sub(t[1], t[0]), V3Sub(t[2], t[0])))
+}
 
-    set 0(val) {this.a = val}
-    set 1(val) {this.b = val}
-    set 2(val) {this.c = val}
+function TriGetBoundingBox(tri, imageWidth, imageHeight) {
+    let xmin = Math.min(tri[0][0], tri[1][0], tri[2][0])
+    let ymin = Math.min(tri[0][1], tri[1][1], tri[2][1])
+    let xmax = Math.max(tri[0][0], tri[1][0], tri[2][0])
+    let ymax = Math.max(tri[0][1], tri[1][1], tri[2][1])
 
-    get 0() {return this.a}
-    get 1() {return this.b}
-    get 2() {return this.c}
+    // the triangle is out of screen
+    if (xmin > imageWidth - 1 || xmax < 0 || ymin > imageHeight - 1 || ymax < 0) {return false}
 
-    normal() {
-        let edge1
-        let edge2
+    return [Math.max(0, Math.floor(xmin)), Math.min(imageWidth - 1, Math.floor(xmax)), Math.max(0, Math.floor(ymin)), Math.min(imageHeight - 1, Math.floor(ymax))]
+}
 
-        edge1 = this.b.sub(this.a)
-        edge2 = this.c.sub(this.a)
-        
-        return edge1.cross(edge2).norm()
-    }
+function TriScale(tri, fac) {
+    return [
+        V3MulF(tri[0], fac),
+        V3MulF(tri[1], fac),
+        V3MulF(tri[2], fac)
+    ]
+}
 
-    getBoundingBox(imageWidth, imageHeight) {
-        let xmin = Math.min(this.a.x, this.b.x, this.c.x)
-        let ymin = Math.min(this.a.y, this.b.y, this.c.y)
-        let xmax = Math.max(this.a.x, this.b.x, this.c.x)
-        let ymax = Math.max(this.a.y, this.b.y, this.c.y)
- 
-        // the triangle is out of screen
-        if (xmin > imageWidth - 1 || xmax < 0 || ymin > imageHeight - 1 || ymax < 0) {return false}
+function TriOffset(tri, offset) {
+    return [
+        V3Add(tri[0], offset),
+        V3Add(tri[1], offset),
+        V3Add(tri[2], offset)
+    ]
+}
 
-        let res = {}
+function TriRotate(tri, euler) {
+    return [
+        V3Rotate(tri[0], euler),
+        V3Rotate(tri[1], euler),
+        V3Rotate(tri[2], euler)
+    ]
+}
 
-        res.x0 = (Math.max(0, Math.floor(xmin)))
-        res.x1 = (Math.min(imageWidth - 1, Math.floor(xmax)))
-        res.y0 = (Math.max(0, Math.floor(ymin)))
-        res.y1 = (Math.min(imageHeight - 1, Math.floor(ymax)))
-        
-        return res
-    }
-
-    clone() {
-        return new tri(
-            new vec3(this.a.x, this.a.y, this.a.z),
-            new vec3(this.b.x, this.b.y, this.b.z),
-            new vec3(this.c.x, this.c.y, this.c.z)
-        )
-    }
-
-    scale(fac) {
-        return new tri(
-            this.a.muls(fac),
-            this.b.muls(fac),
-            this.c.muls(fac)
-        )
-    }
-
-    offset(vec) {
-        return new tri(
-            this.a.add(vec),
-            this.b.add(vec),
-            this.c.add(vec)
-        )
-    }
-
-    rotate(euler) {
-        return new tri(
-            this.a.rotate(euler),
-            this.b.rotate(euler),
-            this.c.rotate(euler)
-        )
-    }
+function TriClone(tri) {
+    return [
+        [tri[0][0], tri[0][1], tri[0][2]],
+        [tri[1][0], tri[1][1], tri[1][2]],
+        [tri[2][0], tri[2][1], tri[2][2]]
+    ]
 }

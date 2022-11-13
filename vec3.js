@@ -1,65 +1,46 @@
-class vec3 {
-    constructor(x=0, y=0, z=0) {
-        this.x = x
-        this.y = y
-        this.z = z
-    }
+function V3Rotate(vec3, euler) {
+    // Rotation about x axis
+    let pre_rotate = [
+        vec3[0],
+        vec3[1]*Math.cos(euler[0]) - vec3[2]*Math.sin(euler[0]),
+        vec3[1]*Math.sin(euler[0]) + vec3[2]*Math.cos(euler[0])
+    ]
 
-    set 0(val) {this.x = val}
-    set 1(val) {this.y = val}
-    set 2(val) {this.z = val}
+    // Rotation about y axis   
+    pre_rotate = [
+        pre_rotate[0]*Math.cos(euler[1]) + pre_rotate[2]*Math.sin(euler[1]),
+        pre_rotate[1],
+        -pre_rotate[0]*Math.sin(euler[1]) + pre_rotate[2]*Math.cos(euler[1])
+    ]
 
-    get 0() {return this.x}
-    get 1() {return this.y}
-    get 2() {return this.z}
+    // Rotation about z axis
+    return [
+        pre_rotate[0]*Math.cos(euler[2]) - pre_rotate[1]*Math.sin(euler[2]),
+        pre_rotate[0]*Math.sin(euler[2]) + pre_rotate[1]*Math.cos(euler[2]),
+        pre_rotate[2]
+    ]
+}
 
-    rotate(euler) {
-        let pre_rotate = new vec3(this.x, this.y, this.z);
-        
-        // Rotation about x axis
-        pre_rotate = new vec3(
-            pre_rotate.x,
-            pre_rotate.y*Math.cos(euler.x) - pre_rotate.z*Math.sin(euler.x),
-            pre_rotate.y*Math.sin(euler.x) + pre_rotate.z*Math.cos(euler.x)
-        )
+function V3Add(a, b) {return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]}
+function V3Sub(a, b) {return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]}
+function V3Mul(a, b) {return [a[0] * b[0], a[1] * b[1], a[2] * b[2]]}
+function V3Div(a, b) {return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]}
 
-        // Rotation about y axis   
-        pre_rotate = new vec3(
-            pre_rotate.x*Math.cos(euler.y) + pre_rotate.z*Math.sin(euler.y),
-            pre_rotate.y,
-            -pre_rotate.x*Math.sin(euler.y) + pre_rotate.z*Math.cos(euler.y)
-        )
+function V3MulF(a, b) {return [a[0] * b, a[1] * b, a[2] * b]}
+function V3DivF(a, b) {return [a[0] / b, a[1] / b, a[2] / b]}
 
-        // Rotation about z axis
-        return new vec3(
-            pre_rotate.x*Math.cos(euler.z) - pre_rotate.y*Math.sin(euler.z),
-            pre_rotate.x*Math.sin(euler.z) + pre_rotate.y*Math.cos(euler.z),
-            pre_rotate.z
-        )
-    }
 
-    add(o) {return new vec3(this.x + o.x, this.y + o.y, this.z + o.z)}
-    sub(o) {return new vec3(this.x - o.x, this.y - o.y, this.z - o.z)}
-    mul(o) {return new vec3(this.x * o.x, this.y * o.y, this.z * o.z)}
-    div(o) {return new vec3(this.x / o.x, this.y / o.y, this.z / o.z)}
+function V3Mag(v) {return Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])}
+function V3Dot(a, b) {return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]}
 
-    muls(s) {return new vec3(this.x * s, this.y * s, this.z * s)}
-    divs(s) {return new vec3(this.x / s, this.y / s, this.z / s)}
-
-    
-    
-    mag() {return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)}
-    dot(o) {return this.x*o.x + this.y*o.y + this.z*o.z}
-
-    cross(o) {
-        return new vec3(
-            this.y * o.z - this.z * o.y,
-            this.z * o.x - this.x * o.z,
-            this.x * o.y - this.y * o.x
-        )
-    }
-    norm() {
-        let m = 1/this.mag()
-        return new vec3(this.x*m, this.y*m, this.z*m)
-    }
+function V3Cross(a, b) {
+    return [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]
+    ]
+}
+function V3Norm(v) {
+    let m = 1/V3Mag(v)
+    return [v[0]*m, v[1]*m, v[2]*m]
 }
