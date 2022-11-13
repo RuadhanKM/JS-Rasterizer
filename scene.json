@@ -13,19 +13,19 @@
             "modelUrl": "https://raw.githubusercontent.com/OpenGLInsights/OpenGLInsightsCode/master/Chapter%2026%20Indexing%20Multiple%20Vertex%20Arrays/article/suzanne.obj",
             "colorSource": "texture",
             "textureUrl": "./maxresdefault.jpg",
-            "pos": {"x": -3, "y": 0, "z": 0},
+            "pos": {"x": -8, "y": 0, "z": 0},
             "rot": {"x": 0, "y": 0, "z": 0},
-            "size": 1
+            "size": 3
         },
         {
             "type": "model",
             "name": "teapot2",
             "modelUrl": "https://raw.githubusercontent.com/OpenGLInsights/OpenGLInsightsCode/master/Chapter%2026%20Indexing%20Multiple%20Vertex%20Arrays/article/suzanne.obj",
-            "colorSource": "solid",
+            "colorSource": "texture",
             "textureUrl": "./maxresdefault.jpg",
-            "pos": {"x": 3, "y": 0, "z": 0},
+            "pos": {"x": 8, "y": 0, "z": 0},
             "rot": {"x": 0, "y": 0, "z": 0},
-            "size": 1
+            "size": 3
         },
         {
             "name": "plane",
@@ -35,7 +35,7 @@
             "textureUrl": "./maxresdefault.jpg",
             "size": 3,
             "color": {"r": 200, "g": 150, "b": 100},
-            "pos": {"x": 0, "y": -5, "z": 0},
+            "pos": {"x": 0, "y": 0, "z": 0},
             "rot": {"x": 0, "y": 0, "z": 0}
         }
     ]
